@@ -1,0 +1,106 @@
+# Golden evaluation set (architecture doc §9-eval, scripts/run_eval.py).
+#
+# Small and high-signal by design, not exhaustive — see the risk note in
+# swiss-legal-ai-architecture.md: keep this small as legal-area coverage grows, don't let
+# it become a second corpus to maintain. `expected_citations` are the (systematic_number,
+# article) pairs a correct, well-grounded answer should cite; `run_eval.py` checks both
+# retrieval recall@k against them and the deterministic citation-verifier pass rate.
+#
+# Cases tagged `graph: true` are picked specifically to exercise the 1-hop
+# cross-reference expansion in orchestration.query_engine (processing.reference_extractor)
+# — the ideal answer requires an article pulled in via a cross-reference, not just the
+# top-retrieved chunk.
+#
+# NOTE: full-corpus runs require all target SR prefixes (see config.PREFIX_LABELS) to
+# actually be ingested — civile/penale/procedura/costituzionale cases will show recall=0
+# until that ingestion has completed (embedding is the bottleneck, see the architecture
+# doc's measured timing). The tributario cases work against the pre-existing corpus.
+
+- id: tributario-001
+  area_of_law: tributario
+  language: it
+  question: >-
+    Come viene tassato il reddito da sostanza immobiliare secondo la legge federale
+    sull'imposta federale diretta?
+  expected_citations:
+    - systematic_number: "642.11"
+      article: "21"
+
+- id: tributario-002
+  area_of_law: tributario
+  language: it
+  question: "Cosa si intende per reddito imponibile secondo la LIFD?"
+  expected_citations:
+    - systematic_number: "642.11"
+      article: "16"
+
+- id: civile-001
+  area_of_law: civile
+  language: it
+  question: "Cosa dice il Codice civile svizzero sul principio della buona fede?"
+  expected_citations:
+    - systematic_number: "210"
+      article: "2"
+
+- id: civile-002
+  area_of_law: civile
+  language: it
+  question: "Come tutela il Codice civile la personalità di una persona?"
+  expected_citations:
+    - systematic_number: "210"
+      article: "28"
+
+- id: civile-003
+  area_of_law: civile
+  language: it
+  graph: true
+  question: >-
+    Un contratto concluso da una persona incapace di discernimento è valido secondo il
+    diritto svizzero? Quali norme del Codice delle obbligazioni si applicano per analogia?
+  expected_citations:
+    - systematic_number: "210"
+      article: "18"
+    - systematic_number: "220"
+      article: "31"
+
+- id: penale-001
+  area_of_law: penale
+  language: it
+  question: "Come definisce il Codice penale svizzero l'omicidio intenzionale?"
+  expected_citations:
+    - systematic_number: "311.0"
+      article: "111"
+
+- id: penale-002
+  area_of_law: penale
+  language: it
+  question: "Quali sono gli elementi costitutivi del reato di furto secondo il Codice penale?"
+  expected_citations:
+    - systematic_number: "311.0"
+      article: "139"
+
+- id: procedura-001
+  area_of_law: procedura_penale
+  language: it
+  question: "Come garantisce il Codice di procedura penale la presunzione di innocenza?"
+  expected_citations:
+    - systematic_number: "312.0"
+      article: "10"
+
+- id: procedura-002
+  area_of_law: procedura_civile
+  language: it
+  question: >-
+    Quale principio disciplina l'obbligo delle parti di comportarsi secondo buona fede
+    nel processo civile svizzero?
+  expected_citations:
+    - systematic_number: "272"
+      article: "52"
+
+- id: costituzionale-001
+  area_of_law: costituzionale
+  language: it
+  question: "Cosa garantisce la Costituzione federale svizzera in materia di uguaglianza giuridica?"
+  expected_citations:
+    - systematic_number: "101"
+      article: "8"
