@@ -3,13 +3,14 @@ hashed-BM25-style sparse representation for Qdrant's native hybrid (dense+sparse
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
 import re
 from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
 from src.config import get_settings
 
@@ -36,7 +37,59 @@ def _tokenize(text: str) -> list[str]:
 
 
 def _hash_token(token: str, dim: int) -> int:
-    return hash(token) % dim
+    """Deterministic token -> index hash for the sparse vector's hashing trick.
+
+    Must be stable across separate Python processes (the ingestion process that embeds
+    passages and the API process that embeds queries at request time are frequently not
+    the same process, and a long-running server gets restarted). Python's builtin
+    `hash()` on `str` is randomized per-process by default (`PYTHONHASHSEED`), which would
+    silently map the same token to a different index in each process — breaking the
+    sparse half of hybrid search without raising any error. blake2b is deterministic
+    across processes/machines regardless of hash-seed randomization.
+    """
+    digest = hashlib.blake2b(token.encode("utf-8"), digest_size=8).digest()
+    return int.from_bytes(digest, "big") % dim
+
+
+def _approx_token_len(text: str) -> int:
+    return len(text.split()) or 1
+
+
+def _length_bucketed_batches(
+    lengths: list[int], batch_size: int, max_tokens_per_batch: int | None
+) -> list[list[int]]:
+    """Group text indices into sub-batches for `SentenceTransformer.encode()`, bounded by
+    both an item-count cap (`batch_size`) and, if given, an approximate total-token cap
+    (`max_tokens_per_batch`).
+
+    `encode()` already sorts its input by length internally before forming batches, but
+    only within a single call — with a large enough `batch_size` (e.g. once raised for
+    GPU throughput), that still allows one sub-batch to end up entirely made of long
+    outlier chunks, which is what previously forced `EMBEDDING_BATCH_SIZE` to stay low
+    across the board. Sorting here first and applying the token budget lets short/medium
+    chunks batch at the full configured size while long outliers automatically split into
+    smaller sub-batches instead of a fixed small batch size everywhere.
+    """
+    order = sorted(range(len(lengths)), key=lambda i: lengths[i])
+    batches: list[list[int]] = []
+    current: list[int] = []
+    current_tokens = 0
+    for idx in order:
+        length = lengths[idx]
+        would_exceed_tokens = (
+            max_tokens_per_batch is not None
+            and current
+            and current_tokens + length > max_tokens_per_batch
+        )
+        if current and (len(current) >= batch_size or would_exceed_tokens):
+            batches.append(current)
+            current = []
+            current_tokens = 0
+        current.append(idx)
+        current_tokens += length
+    if current:
+        batches.append(current)
+    return batches
 
 
 class EmbedService:
@@ -71,41 +124,48 @@ class EmbedService:
         texts: list[str],
         task: Literal["retrieval.query", "retrieval.passage"] = "retrieval.passage",
         batch_size: int | None = None,
+        max_tokens_per_batch: int | None = None,
     ) -> list[list[float]]:
+        settings = get_settings()
         if batch_size is None:
-            batch_size = get_settings().embedding_batch_size
+            batch_size = settings.embedding_batch_size
+        if max_tokens_per_batch is None:
+            max_tokens_per_batch = settings.embedding_max_tokens_per_batch
         if not texts:
             return []
+
         model_name_lower = self._model_name.lower()
+        encode_kwargs: dict[str, Any] = {}
         if model_name_lower.startswith("jinaai/"):
             # jina-embeddings-v3's custom remote code takes an explicit task adapter.
-            embeddings = self.model.encode(
-                texts,
-                batch_size=batch_size,
-                task=task,
-                show_progress_bar=False,
-                convert_to_numpy=True,
-            )
+            prepared = texts
+            encode_kwargs["task"] = task
         elif "e5" in model_name_lower:
             # Standard sentence-transformers models have no task parameter; e5-style
             # "query: "/"passage: " prefixing is the documented way to get the same
             # asymmetric retrieval benefit for models like intfloat/multilingual-e5-*.
             prefix = "query: " if task == "retrieval.query" else "passage: "
-            embeddings = self.model.encode(
-                [prefix + t for t in texts],
-                batch_size=batch_size,
-                show_progress_bar=False,
-                convert_to_numpy=True,
-            )
+            prepared = [prefix + t for t in texts]
         else:
             # e.g. BAAI/bge-m3: prefix-free multilingual retrieval, symmetric
             # query/passage encoding — no special task handling needed.
-            embeddings = self.model.encode(
-                texts,
-                batch_size=batch_size,
+            prepared = texts
+
+        lengths = [_approx_token_len(t) for t in prepared]
+        batches = _length_bucketed_batches(lengths, batch_size, max_tokens_per_batch)
+
+        embeddings: list[Any] = [None] * len(prepared)
+        for batch_indices in batches:
+            batch_texts = [prepared[i] for i in batch_indices]
+            batch_embeddings = self.model.encode(
+                batch_texts,
+                batch_size=len(batch_texts),
                 show_progress_bar=False,
                 convert_to_numpy=True,
+                **encode_kwargs,
             )
+            for i, vec in zip(batch_indices, batch_embeddings):
+                embeddings[i] = vec
         return [vec.tolist() for vec in embeddings]
 
     def embed_sparse(self, texts: list[str]) -> list[SparseVector]:

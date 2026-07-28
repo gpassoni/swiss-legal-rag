@@ -6,6 +6,8 @@ relying on the model to remember to include it.
 """
 from __future__ import annotations
 
+import math
+
 from src.storage.qdrant_store import SearchResult
 
 DISCLAIMER = (
@@ -47,6 +49,58 @@ def format_chunk_for_prompt(index: int, result: SearchResult) -> str:
         f"[Chunk {index}] law={law} article={article} language={meta.get('language')} "
         f"source_url={source_url}\n{result.text}"
     )
+
+
+def estimate_tokens(text: str) -> int:
+    """Approximate token count for prompt-budget purposes.
+
+    Not tied to a specific provider's tokenizer: `LLM_PROVIDER` can be Anthropic or
+    OpenAI (see query_engine.py), and Anthropic doesn't ship a fast local tokenizer the
+    way OpenAI's tiktoken does, so a single provider-specific dependency wouldn't even
+    apply to both. A ~1.3x multiplier over a whitespace word count is a deliberately
+    cautious over-estimate of subword/punctuation splitting for truncation purposes —
+    good enough to budget against, not an exact count.
+    """
+    if not text:
+        return 0
+    return math.ceil(len(text.split()) * 1.3)
+
+
+def fit_chunks_to_token_budget(
+    chunks: list[SearchResult],
+    expanded_chunks: list[SearchResult],
+    max_tokens: int,
+) -> tuple[list[SearchResult], list[SearchResult], int]:
+    """Keep as many chunks as fit in `max_tokens`, dropping the lowest-priority ones
+    first: `chunks` is already rerank-score-ordered (best first) and `expanded_chunks`
+    is lower priority still (cross-reference "supporting context", see
+    `orchestration.query_engine._expand_references`), so truncating from each list's
+    tail preserves relevance ordering. Always keeps at least the single highest-priority
+    chunk even if it alone exceeds the budget, so one oversized chunk can't empty the
+    prompt entirely. Returns `(kept_chunks, kept_expanded_chunks, dropped_count)`.
+    """
+    kept_chunks: list[SearchResult] = []
+    kept_expanded: list[SearchResult] = []
+    used_tokens = 0
+    dropped = 0
+
+    for i, chunk in enumerate(chunks):
+        cost = estimate_tokens(format_chunk_for_prompt(i + 1, chunk))
+        if kept_chunks and used_tokens + cost > max_tokens:
+            dropped += 1
+            continue
+        kept_chunks.append(chunk)
+        used_tokens += cost
+
+    for i, chunk in enumerate(expanded_chunks):
+        cost = estimate_tokens(format_chunk_for_prompt(i + 1, chunk))
+        if used_tokens + cost > max_tokens:
+            dropped += 1
+            continue
+        kept_expanded.append(chunk)
+        used_tokens += cost
+
+    return kept_chunks, kept_expanded, dropped
 
 
 def build_user_prompt(

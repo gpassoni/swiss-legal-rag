@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     # Cheapest current Anthropic model — good default while iterating (Phase 3 test UI).
     # Override via LLM_MODEL in .env.
     llm_model: str = "claude-haiku-4-5-20251001"
+    # Low, not 0.0: some provider APIs reject/warn on a hard-zero temperature for certain
+    # models, and a touch of randomness is harmless for this task. Kept low rather than
+    # the provider default (Anthropic's default is 1.0) because the answer must follow a
+    # rigid inline citation grammar that `citation_verifier` parses with a strict regex —
+    # lower temperature measurably improves format adherence and factual consistency for
+    # a task that should behave close to deterministically in the first place.
+    llm_temperature: float = 0.1
+    llm_timeout_seconds: float = 30.0
 
     # Embedding model
     embedding_model: str = "intfloat/multilingual-e5-base"
@@ -36,6 +44,18 @@ class Settings(BaseSettings):
     # EMBEDDING_DEVICE=cuda, tuned to available VRAM (128 is a reasonable start for an
     # 8GB card with a ~1GB-class multilingual embedding model).
     embedding_batch_size: int = 16
+
+    # Caps the approximate total token count of any single encode() sub-batch, on top of
+    # the item-count cap (EMBEDDING_BATCH_SIZE) — see embed_service._length_bucketed_batches.
+    # sentence-transformers' own encode() already sorts inputs by length internally before
+    # batching, but only within one encode() call; that still allows a batch entirely made
+    # of long outlier chunks (chunker.py allows up to ~1500 tokens/article) once
+    # EMBEDDING_BATCH_SIZE is raised for GPU throughput. 24000 mirrors the previously
+    # tested-safe worst case (batch_size=16 x ~1500-token chunk) as a default: below that
+    # per-batch token total, chunks are bucketed at the full configured batch size; above
+    # it, a bucket of long outliers gets split into several smaller sub-batches
+    # automatically. Re-tune against actual VRAM headroom before relying on it.
+    embedding_max_tokens_per_batch: int = 24000
 
     # Reranker (cross-encoder). No dedicated device setting: sentence-transformers'
     # CrossEncoder auto-detects CUDA when available, same as the embedding model.
@@ -51,6 +71,15 @@ class Settings(BaseSettings):
     # Kept well below the sentence-transformers default (32) for the same VRAM-headroom
     # reason as EMBEDDING_BATCH_SIZE — bump if profiling shows headroom on your GPU.
     reranker_batch_size: int = 8
+
+    # Cap on the *retrieved + cross-reference-expanded chunks* portion of the user prompt
+    # (approximate tokens, see orchestration.prompt_templates.estimate_tokens) — without
+    # it, top_k=8 chunks up to ~1500 tokens each plus MAX_EXPANDED_CHUNKS=5 more had no
+    # ceiling at all (worst case >20k tokens of context for one query, uncontrolled cost/
+    # latency and no guarantee relevant information isn't diluted by marginal chunks).
+    # 6000 is a starting point comfortably above what a typical top_k=8 query needs;
+    # re-tune against observed prompt_tokens_approx / cost in the query_completed log.
+    max_prompt_context_tokens: int = 6000
 
     # Ingestion scope — comma-separated SR/RS systematic-number prefixes to ingest from
     # Fedlex (same comma-separated-string convention as `snb_test_cubes` below; pydantic-

@@ -1,0 +1,602 @@
+[
+  {
+    "id": "tributario-001",
+    "area_of_law": "tributario",
+    "question": "Come viene tassato il reddito da sostanza immobiliare secondo la legge federale sull'imposta federale diretta?",
+    "expected": [
+      [
+        "642.11",
+        "21"
+      ]
+    ],
+    "retrieved": [
+      [
+        "312.057",
+        "2"
+      ],
+      [
+        "642.11",
+        "1"
+      ],
+      [
+        "642.11",
+        "20"
+      ],
+      [
+        "642.11",
+        "21"
+      ],
+      [
+        "642.11",
+        "9"
+      ],
+      [
+        "642.110.8",
+        "1"
+      ],
+      [
+        "642.110.8",
+        "10"
+      ],
+      [
+        "642.110.8",
+        "2"
+      ],
+      [
+        "642.110.8",
+        "5"
+      ],
+      [
+        "642.110.8",
+        "6"
+      ],
+      [
+        "642.113",
+        "14"
+      ]
+    ],
+    "recall_at_k": 1.0,
+    "precision_at_k": 0.0,
+    "mrr": 0.0,
+    "citation_pass": true,
+    "unverified_citation_count": 0,
+    "has_citations": true,
+    "answer_preview": "Secondo la legge federale sull'imposta federale diretta (LIFD), il reddito da sostanza immobiliare è imponibile. In particolare, è imponibile il reddi"
+  },
+  {
+    "id": "tributario-002",
+    "area_of_law": "tributario",
+    "question": "Cosa si intende per reddito imponibile secondo la LIFD?",
+    "expected": [
+      [
+        "642.11",
+        "16"
+      ]
+    ],
+    "retrieved": [
+      [
+        "642.11",
+        "1"
+      ],
+      [
+        "642.11",
+        "20"
+      ],
+      [
+        "642.11",
+        "21"
+      ],
+      [
+        "642.11",
+        "3"
+      ],
+      [
+        "642.11",
+        "9"
+      ],
+      [
+        "642.110.8",
+        "1"
+      ],
+      [
+        "642.110.8",
+        "2"
+      ],
+      [
+        "642.110.8",
+        "4"
+      ],
+      [
+        "642.110.8",
+        "5"
+      ],
+      [
+        "642.113",
+        "1"
+      ],
+      [
+        "642.113",
+        "11"
+      ],
+      [
+        "642.113",
+        "14"
+      ]
+    ],
+    "recall_at_k": 0.0,
+    "precision_at_k": 0.0,
+    "mrr": 0.0,
+    "citation_pass": false,
+    "unverified_citation_count": 0,
+    "has_citations": false,
+    "answer_preview": "Mi dispiace, ma i chunk forniti non contengono una definizione generale del \"reddito imponibile\" secondo la LIFD.   I chunk disponibili trattano princ"
+  },
+  {
+    "id": "civile-001",
+    "area_of_law": "civile",
+    "question": "Cosa dice il Codice civile svizzero sul principio della buona fede?",
+    "expected": [
+      [
+        "210",
+        "2"
+      ]
+    ],
+    "retrieved": [
+      [
+        "210",
+        "2"
+      ],
+      [
+        "210",
+        "3"
+      ],
+      [
+        "210",
+        "32"
+      ],
+      [
+        "210",
+        "452"
+      ],
+      [
+        "210",
+        "722"
+      ],
+      [
+        "210",
+        "728"
+      ],
+      [
+        "210",
+        "934"
+      ],
+      [
+        "210",
+        "939"
+      ],
+      [
+        "272",
+        "52"
+      ],
+      [
+        "312.0",
+        "3"
+      ]
+    ],
+    "recall_at_k": 1.0,
+    "precision_at_k": 0.125,
+    "mrr": 0.3333333333333333,
+    "citation_pass": true,
+    "unverified_citation_count": 0,
+    "has_citations": true,
+    "answer_preview": "# La buona fede nel Codice civile svizzero  Il Codice civile svizzero contiene due disposizioni fondamentali sul principio della buona fede:  ## Princ"
+  },
+  {
+    "id": "civile-002",
+    "area_of_law": "civile",
+    "question": "Come tutela il Codice civile la personalità di una persona?",
+    "expected": [
+      [
+        "210",
+        "28"
+      ]
+    ],
+    "retrieved": [
+      [
+        "210",
+        "10"
+      ],
+      [
+        "210",
+        "15"
+      ],
+      [
+        "210",
+        "21"
+      ],
+      [
+        "210",
+        "28"
+      ],
+      [
+        "210",
+        "3"
+      ],
+      [
+        "210",
+        "31"
+      ],
+      [
+        "210",
+        "4"
+      ],
+      [
+        "210",
+        "52"
+      ],
+      [
+        "210",
+        "6"
+      ],
+      [
+        "210",
+        "71"
+      ],
+      [
+        "312.0",
+        "117"
+      ],
+      [
+        "312.0",
+        "152"
+      ]
+    ],
+    "recall_at_k": 1.0,
+    "precision_at_k": 0.25,
+    "mrr": 0.3333333333333333,
+    "citation_pass": true,
+    "unverified_citation_count": 0,
+    "has_citations": true,
+    "answer_preview": "# Tutela della personalità nel Codice civile svizzero  Il Codice civile svizzero tutela la personalità di una persona attraverso diverse disposizioni:"
+  },
+  {
+    "id": "civile-003",
+    "area_of_law": "civile",
+    "question": "Un contratto concluso da una persona incapace di discernimento è valido secondo il diritto svizzero? Quali norme del Codice delle obbligazioni si applicano per analogia?",
+    "expected": [
+      [
+        "210",
+        "18"
+      ],
+      [
+        "220",
+        "31"
+      ]
+    ],
+    "retrieved": [
+      [
+        "210",
+        "16"
+      ],
+      [
+        "210",
+        "18"
+      ],
+      [
+        "210",
+        "19"
+      ],
+      [
+        "210",
+        "373"
+      ],
+      [
+        "210",
+        "382"
+      ],
+      [
+        "210",
+        "407"
+      ],
+      [
+        "210",
+        "468"
+      ]
+    ],
+    "recall_at_k": 0.5,
+    "precision_at_k": 0.125,
+    "mrr": 0.16666666666666666,
+    "citation_pass": true,
+    "unverified_citation_count": 0,
+    "has_citations": true,
+    "answer_preview": "# Contratti conclusi da persone incapaci di discernimento secondo il diritto svizzero  ## Validità del contratto  Un contratto concluso da una persona"
+  },
+  {
+    "id": "penale-001",
+    "area_of_law": "penale",
+    "question": "Come definisce il Codice penale svizzero l'omicidio intenzionale?",
+    "expected": [
+      [
+        "311.0",
+        "111"
+      ]
+    ],
+    "retrieved": [
+      [
+        "311.0",
+        "260"
+      ],
+      [
+        "312.0",
+        "11"
+      ],
+      [
+        "312.0",
+        "24"
+      ],
+      [
+        "312.0",
+        "260"
+      ],
+      [
+        "312.0",
+        "31"
+      ],
+      [
+        "312.0",
+        "32"
+      ]
+    ],
+    "recall_at_k": 0.0,
+    "precision_at_k": 0.0,
+    "mrr": 0.0,
+    "citation_pass": false,
+    "unverified_citation_count": 0,
+    "has_citations": false,
+    "answer_preview": "Mi dispiace, ma i chunk forniti non contengono informazioni sulla definizione di omicidio intenzionale secondo il Codice penale svizzero. I chunk rigu"
+  },
+  {
+    "id": "penale-002",
+    "area_of_law": "penale",
+    "question": "Quali sono gli elementi costitutivi del reato di furto secondo il Codice penale?",
+    "expected": [
+      [
+        "311.0",
+        "139"
+      ]
+    ],
+    "retrieved": [
+      [
+        "210",
+        "13"
+      ],
+      [
+        "210",
+        "314"
+      ],
+      [
+        "210",
+        "642"
+      ],
+      [
+        "210",
+        "805"
+      ],
+      [
+        "311.0",
+        "52"
+      ],
+      [
+        "311.0",
+        "71"
+      ],
+      [
+        "312.0",
+        "263"
+      ],
+      [
+        "312.0",
+        "267"
+      ],
+      [
+        "312.0",
+        "319"
+      ],
+      [
+        "312.0",
+        "342"
+      ],
+      [
+        "312.0",
+        "8"
+      ]
+    ],
+    "recall_at_k": 0.0,
+    "precision_at_k": 0.0,
+    "mrr": 0.0,
+    "citation_pass": false,
+    "unverified_citation_count": 0,
+    "has_citations": false,
+    "answer_preview": "Mi dispiace, ma i chunk forniti non contengono informazioni sugli elementi costitutivi del reato di furto secondo il Codice penale svizzero.   I docum"
+  },
+  {
+    "id": "procedura-001",
+    "area_of_law": "procedura_penale",
+    "question": "Come garantisce il Codice di procedura penale la presunzione di innocenza?",
+    "expected": [
+      [
+        "312.0",
+        "10"
+      ]
+    ],
+    "retrieved": [
+      [
+        "312.0",
+        "10"
+      ],
+      [
+        "312.0",
+        "152"
+      ],
+      [
+        "312.0",
+        "2"
+      ],
+      [
+        "312.0",
+        "3"
+      ],
+      [
+        "312.0",
+        "305"
+      ],
+      [
+        "312.0",
+        "356"
+      ],
+      [
+        "312.0",
+        "374"
+      ],
+      [
+        "312.0",
+        "446"
+      ],
+      [
+        "312.0",
+        "447"
+      ],
+      [
+        "312.0",
+        "457"
+      ],
+      [
+        "312.0",
+        "74"
+      ],
+      [
+        "312.0",
+        "8"
+      ],
+      [
+        "312.0",
+        "88"
+      ]
+    ],
+    "recall_at_k": 1.0,
+    "precision_at_k": 0.125,
+    "mrr": 1.0,
+    "citation_pass": true,
+    "unverified_citation_count": 0,
+    "has_citations": true,
+    "answer_preview": "# Come il Codice di procedura penale garantisce la presunzione di innocenza  Il Codice di procedura penale svizzero garantisce la presunzione di innoc"
+  },
+  {
+    "id": "procedura-002",
+    "area_of_law": "procedura_civile",
+    "question": "Quale principio disciplina l'obbligo delle parti di comportarsi secondo buona fede nel processo civile svizzero?",
+    "expected": [
+      [
+        "272",
+        "52"
+      ]
+    ],
+    "retrieved": [
+      [
+        "210",
+        "1"
+      ],
+      [
+        "210",
+        "2"
+      ],
+      [
+        "210",
+        "3"
+      ],
+      [
+        "272",
+        "107"
+      ],
+      [
+        "272",
+        "194"
+      ],
+      [
+        "272",
+        "52"
+      ],
+      [
+        "312.0",
+        "3"
+      ]
+    ],
+    "recall_at_k": 1.0,
+    "precision_at_k": 0.14285714285714285,
+    "mrr": 1.0,
+    "citation_pass": true,
+    "unverified_citation_count": 0,
+    "has_citations": true,
+    "answer_preview": "Nel processo civile svizzero, il principio che disciplina l'obbligo delle parti di comportarsi secondo buona fede è enunciato nell'**Articolo 52 del C"
+  },
+  {
+    "id": "costituzionale-001",
+    "area_of_law": "costituzionale",
+    "question": "Cosa garantisce la Costituzione federale svizzera in materia di uguaglianza giuridica?",
+    "expected": [
+      [
+        "101",
+        "8"
+      ]
+    ],
+    "retrieved": [
+      [
+        "210",
+        "15"
+      ],
+      [
+        "210",
+        "21"
+      ],
+      [
+        "210",
+        "3"
+      ],
+      [
+        "210",
+        "4"
+      ],
+      [
+        "210",
+        "58"
+      ],
+      [
+        "210",
+        "59"
+      ],
+      [
+        "210",
+        "86"
+      ],
+      [
+        "272",
+        "194"
+      ],
+      [
+        "272",
+        "5"
+      ],
+      [
+        "272",
+        "6"
+      ]
+    ],
+    "recall_at_k": 0.0,
+    "precision_at_k": 0.0,
+    "mrr": 0.0,
+    "citation_pass": false,
+    "unverified_citation_count": 0,
+    "has_citations": false,
+    "answer_preview": "Mi dispiace, ma i chunk forniti non contengono informazioni sulla Costituzione federale svizzera e sulle garanzie che essa prevede in materia di uguag"
+  }
+]

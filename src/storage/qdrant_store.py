@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 from qdrant_client import QdrantClient, models
@@ -54,9 +55,40 @@ class QdrantStore:
             host=host or settings.qdrant_host, port=port or settings.qdrant_port
         )
 
+    def _existing_dense_dim(self) -> int | None:
+        """The dense vector dimension the collection was actually created with, or None
+        if it doesn't exist / has no named "dense" vector config (shouldn't normally
+        happen for a collection this project created, but defensive since a
+        differently-shaped collection could exist under the same name)."""
+        info = self._client.get_collection(self._collection)
+        vectors_config = info.config.params.vectors
+        if isinstance(vectors_config, dict):
+            dense_config = vectors_config.get(DENSE_VECTOR_NAME)
+            return dense_config.size if dense_config else None
+        if vectors_config is not None:
+            return vectors_config.size
+        return None
+
     def create_collection(self, dense_dim: int, recreate: bool = False) -> None:
         exists = self._client.collection_exists(self._collection)
         if exists and not recreate:
+            # Guard against silently upserting vectors of the wrong dimension into a
+            # collection created with a different embedding model — without this, the
+            # first upsert would fail with a much less legible error straight from
+            # Qdrant's HTTP API (or, worse, succeed into a mixed-dimension collection if
+            # Qdrant's own validation didn't catch it), rather than a clear message
+            # pointing at the actual cause (EMBEDDING_MODEL changed since ingestion).
+            existing_dim = self._existing_dense_dim()
+            if existing_dim is not None and existing_dim != dense_dim:
+                raise ValueError(
+                    f"Qdrant collection {self._collection!r} already exists with dense "
+                    f"vector dimension {existing_dim}, but the current embedding model "
+                    f"produces {dense_dim}-dim vectors. This usually means the "
+                    f"configured embedding model changed after the collection was first "
+                    f"created. Recreate the collection (create_collection(recreate=True), "
+                    f"which deletes all existing points) or point at a different "
+                    f"collection name instead of upserting incompatible vectors."
+                )
             logger.info("Qdrant collection %s already exists", self._collection)
             return
         if exists and recreate:
@@ -80,7 +112,15 @@ class QdrantStore:
             ("language", models.PayloadSchemaType.KEYWORD),
             ("systematic_number", models.PayloadSchemaType.KEYWORD),
             ("law_short_name", models.PayloadSchemaType.KEYWORD),
-            ("valid_to", models.PayloadSchemaType.KEYWORD),
+            # DATETIME (not KEYWORD) so `_in_force_condition`'s range conditions below
+            # can be evaluated/indexed as dates, not opaque strings. Qdrant's datetime
+            # parser accepts the bare "YYYY-MM-DD" values this project stores (no time
+            # component needed). Pre-existing collections created before this change keep
+            # their old KEYWORD index for these two fields until recreated (`recreate=True`)
+            # — Qdrant can still evaluate a date range condition against un/wrongly-typed
+            # payload without matching, it just needs a matching index to do so correctly.
+            ("valid_from", models.PayloadSchemaType.DATETIME),
+            ("valid_to", models.PayloadSchemaType.DATETIME),
             ("area_of_law", models.PayloadSchemaType.KEYWORD),
             ("article", models.PayloadSchemaType.KEYWORD),
         ):
@@ -153,13 +193,47 @@ class QdrantStore:
         return SearchResult(id=str(point.id), score=1.0, text=text, metadata=payload)
 
     @staticmethod
-    def _build_filter(filters: dict[str, Any] | None) -> models.Filter | None:
-        if not filters:
-            return None
-        must = [
+    def _in_force_condition(as_of: date) -> models.Filter:
+        """Matches chunks in force on `as_of`: `valid_from` is null or <= as_of, AND
+        `valid_to` is null or >= as_of. Nested as a sub-`Filter` (Qdrant's `Filter` type
+        is itself a valid condition) so it composes with the equality conditions from
+        `_build_filter` via a plain AND, while each bound internally is an OR against
+        "field absent" (a chunk with no known valid_from/valid_to shouldn't be excluded
+        just because the field is missing — most Fedlex chunks have no valid_to at all
+        since only in-force consolidations are ingested, see fedlex_client.py)."""
+        return models.Filter(
+            must=[
+                models.Filter(
+                    should=[
+                        models.IsNullCondition(is_null=models.PayloadField(key="valid_from")),
+                        models.FieldCondition(
+                            key="valid_from", range=models.DatetimeRange(lte=as_of)
+                        ),
+                    ]
+                ),
+                models.Filter(
+                    should=[
+                        models.IsNullCondition(is_null=models.PayloadField(key="valid_to")),
+                        models.FieldCondition(
+                            key="valid_to", range=models.DatetimeRange(gte=as_of)
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+    @classmethod
+    def _build_filter(
+        cls, filters: dict[str, Any] | None, in_force_on: date | None = None
+    ) -> models.Filter | None:
+        must: list[Any] = [
             models.FieldCondition(key=key, match=models.MatchValue(value=value))
-            for key, value in filters.items()
+            for key, value in (filters or {}).items()
         ]
+        if in_force_on is not None:
+            must.append(cls._in_force_condition(in_force_on))
+        if not must:
+            return None
         return models.Filter(must=must)
 
     def hybrid_search(
@@ -170,9 +244,23 @@ class QdrantStore:
         filters: dict[str, Any] | None = None,
         limit: int = 8,
         prefetch_limit: int = 50,
+        in_force_on: date | bool | None = True,
     ) -> list[SearchResult]:
-        """Dense + sparse candidates fused with Reciprocal Rank Fusion, metadata pre-filtered."""
-        qdrant_filter = self._build_filter(filters)
+        """Dense + sparse candidates fused with Reciprocal Rank Fusion, metadata pre-filtered.
+
+        `in_force_on` controls the "in force" date filter (architecture spec §3.5):
+        `True` (default) filters to chunks in force today, a specific `date` filters to
+        that date, and `False`/`None` disables the date filter entirely (e.g. for
+        deliberately querying historical/expired versions).
+        """
+        resolved_in_force_on: date | None
+        if in_force_on is True:
+            resolved_in_force_on = date.today()
+        elif in_force_on is False or in_force_on is None:
+            resolved_in_force_on = None
+        else:
+            resolved_in_force_on = in_force_on
+        qdrant_filter = self._build_filter(filters, in_force_on=resolved_in_force_on)
         response = self._client.query_points(
             collection_name=self._collection,
             prefetch=[

@@ -35,6 +35,19 @@ class VerificationResult:
     def unverified_citations(self) -> list[Citation]:
         return [c for c in self.citations if not c.verified]
 
+    @property
+    def has_citations(self) -> bool:
+        """Whether the answer contained *any* parseable citation at all.
+
+        `all_verified` is `False` both when every citation is unverified and when there
+        are zero citations, and `unverified_citations` is empty in both the "all good"
+        and the "cited nothing" case — neither field alone lets a caller tell "every
+        citation checked out" apart from "no claim was backed by anything". Callers that
+        need to flag an ungrounded answer (e.g. chunks were retrieved but the model cited
+        none of them) should check this alongside `unverified_citations`.
+        """
+        return bool(self.citations)
+
 
 def extract_citations(answer: str) -> list[tuple[str, str]]:
     """Extract (article, source_url) pairs from the model's answer text."""

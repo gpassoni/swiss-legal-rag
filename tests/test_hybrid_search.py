@@ -30,6 +30,7 @@ def test_search_embeds_query_and_delegates_to_store():
         query_sparse_values=[0.9, 0.4],
         filters={"language": "de"},
         limit=10,
+        in_force_on=True,
     )
     assert results == expected_results
 
@@ -45,3 +46,29 @@ def test_search_defaults_to_no_filters():
 
     _, kwargs = store.hybrid_search.call_args
     assert kwargs["filters"] is None
+
+
+def test_search_defaults_to_in_force_today():
+    embed_service = MagicMock()
+    embed_service.embed_dense.return_value = [[0.0]]
+    embed_service.embed_sparse.return_value = [SparseVector(indices=[], values=[])]
+    store = MagicMock()
+    store.hybrid_search.return_value = []
+
+    hybrid_search.search("query", embed_service, store)
+
+    _, kwargs = store.hybrid_search.call_args
+    assert kwargs["in_force_on"] is True
+
+
+def test_search_forwards_explicit_in_force_on():
+    embed_service = MagicMock()
+    embed_service.embed_dense.return_value = [[0.0]]
+    embed_service.embed_sparse.return_value = [SparseVector(indices=[], values=[])]
+    store = MagicMock()
+    store.hybrid_search.return_value = []
+
+    hybrid_search.search("query", embed_service, store, in_force_on=False)
+
+    _, kwargs = store.hybrid_search.call_args
+    assert kwargs["in_force_on"] is False

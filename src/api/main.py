@@ -52,6 +52,10 @@ class QueryResponse(BaseModel):
     verified_sources: list[dict[str, str]]
     unverified_citation_count: int
     retrieved_chunk_count: int
+    # False when the answer contains zero citations at all — distinct from
+    # unverified_citation_count == 0, which is also true in that case (see
+    # QueryResult.has_citations / citation_verifier.VerificationResult.has_citations).
+    has_citations: bool
 
 
 class IngestFedlexRequest(BaseModel):
@@ -125,6 +129,7 @@ async def query(request: QueryRequest) -> QueryResponse:
         ],
         unverified_citation_count=result.unverified_citation_count,
         retrieved_chunk_count=result.retrieved_chunk_count,
+        has_citations=result.has_citations,
     )
 
 
@@ -193,9 +198,12 @@ async def ingest_fedlex(request: IngestFedlexRequest) -> IngestFedlexResponse:
         return IngestFedlexResponse(acts_processed=acts_processed, chunks_upserted=0)
 
     texts = [text for text, _ in chunk_payloads]
-    embedded = embed_service.embed_batch(texts)
+    embedded = await asyncio.to_thread(embed_service.embed_batch, texts)
     dense_dim = len(embedded[0].dense)
-    store.create_collection(dense_dim=dense_dim)
+    try:
+        store.create_collection(dense_dim=dense_dim)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     records = [
         ChunkRecord(text=text, metadata=meta, embedding=embedding)
@@ -212,33 +220,53 @@ async def _run_fedlex_bulk_job(
     """Background body of `/ingest/fedlex/bulk`: ingest every prefix, updating
     `ingestion_jobs.details` incrementally so `/ingest/fedlex/bulk/{job_id}` can report
     per-prefix progress while the job is still running. Runs after the triggering
-    request has already returned a response (see FastAPI `BackgroundTasks`)."""
+    request has already returned a response (see FastAPI `BackgroundTasks`).
+
+    Each act's chunks are embedded and upserted (and its references persisted)
+    immediately after fetching, rather than accumulating every prefix's chunks in memory
+    for one single embed+upsert at the very end of the whole job: peak memory now scales
+    with one act at a time instead of the entire requested scope, and a crash partway
+    through only loses the act currently in flight — every act already processed stays
+    persisted in Qdrant/Postgres, since `update_job_details` and the upserts below happen
+    per act as real checkpoints, not just as a status label. This does not change
+    anything about how Fedlex itself is called: acts are still fetched one at a time,
+    strictly sequentially, through the same throttled `FedlexClient` as before.
+    """
     pg_store = PostgresStore()
     await pg_store.init_schema()
     embed_service = get_embed_service()
     store = _store()
     client = FedlexClient()
 
-    details: dict[str, Any] = {"prefixes": {p: {"status": "pending"} for p in prefixes}}
+    details: dict[str, Any] = {
+        "prefixes": {p: {"status": "pending"} for p in prefixes},
+        "chunks_upserted": 0,
+        "references_extracted": 0,
+    }
     await pg_store.update_job_details(job_id, details)
 
-    chunk_payloads: list[tuple[str, dict]] = []
-    all_refs: list[dict] = []
     try:
         for prefix in prefixes:
             details["prefixes"][prefix] = {"status": "running"}
             await pg_store.update_job_details(job_id, details)
+            # Defined before the try block (not just inside it) so a failure — even one
+            # from list_consolidated_acts_by_prefix_preferred itself, before any act is
+            # fetched — can still report how much of this prefix actually completed,
+            # instead of the failure status silently discarding progress already made.
+            acts_processed = 0
+            prefix_chunks = 0
             try:
                 acts = await asyncio.to_thread(
                     client.list_consolidated_acts_by_prefix_preferred, prefix
                 )
-                acts_processed = 0
-                prefix_chunks = 0
                 for act_summary in acts[:max_acts_per_prefix]:
                     doc = await asyncio.to_thread(
                         client.fetch_act_preferred, act_summary.act_uri, include_text=True
                     )
                     acts_processed += 1
+
+                    act_chunk_payloads: list[tuple[str, dict]] = []
+                    act_refs: list[dict] = []
                     for chunk in chunk_act_text(doc.raw_text):
                         meta = build_metadata(
                             chunk,
@@ -250,10 +278,9 @@ async def _run_fedlex_bulk_job(
                             valid_from=doc.valid_from,
                             valid_to=doc.valid_to,
                         )
-                        chunk_payloads.append((chunk.text, meta.model_dump()))
-                        prefix_chunks += 1
+                        act_chunk_payloads.append((chunk.text, meta.model_dump()))
                         if chunk.article:
-                            all_refs.extend(
+                            act_refs.extend(
                                 asdict(ref)
                                 for ref in extract_references(
                                     chunk.text,
@@ -263,6 +290,33 @@ async def _run_fedlex_bulk_job(
                                     source_url=doc.source_url,
                                 )
                             )
+
+                    if act_chunk_payloads:
+                        texts = [text for text, _ in act_chunk_payloads]
+                        embedded = await asyncio.to_thread(embed_service.embed_batch, texts)
+                        store.create_collection(dense_dim=len(embedded[0].dense))
+                        records = [
+                            ChunkRecord(text=text, metadata=meta, embedding=embedding)
+                            for (text, meta), embedding in zip(act_chunk_payloads, embedded)
+                        ]
+                        act_upserted = store.upsert_chunks(records)
+                        prefix_chunks += act_upserted
+                        details["chunks_upserted"] += act_upserted
+
+                    if act_refs:
+                        await pg_store.upsert_article_references(act_refs)
+                        details["references_extracted"] += len(act_refs)
+
+                    # Checkpoint after every act (not just at prefix/job end) so a
+                    # concurrent GET on /ingest/fedlex/bulk/{job_id} sees real progress,
+                    # and so this act's work is durably recorded before the next one starts.
+                    details["prefixes"][prefix] = {
+                        "status": "running",
+                        "acts": acts_processed,
+                        "chunks": prefix_chunks,
+                    }
+                    await pg_store.update_job_details(job_id, details)
+
                 details["prefixes"][prefix] = {
                     "status": "done",
                     "acts": acts_processed,
@@ -270,25 +324,12 @@ async def _run_fedlex_bulk_job(
                 }
             except Exception:
                 logger.exception("Bulk ingestion failed for prefix %s", prefix)
-                details["prefixes"][prefix] = {"status": "failed"}
+                details["prefixes"][prefix] = {
+                    "status": "failed",
+                    "acts": acts_processed,
+                    "chunks": prefix_chunks,
+                }
             await pg_store.update_job_details(job_id, details)
-
-        if all_refs:
-            await pg_store.upsert_article_references(all_refs)
-            details["references_extracted"] = len(all_refs)
-
-        if chunk_payloads:
-            texts = [text for text, _ in chunk_payloads]
-            embedded = embed_service.embed_batch(texts)
-            store.create_collection(dense_dim=len(embedded[0].dense))
-            records = [
-                ChunkRecord(text=text, metadata=meta, embedding=embedding)
-                for (text, meta), embedding in zip(chunk_payloads, embedded)
-            ]
-            upserted = store.upsert_chunks(records)
-            details["chunks_upserted"] = upserted
-        else:
-            details["chunks_upserted"] = 0
 
         await pg_store.finish_job(job_id, "completed", details)
     except Exception:
@@ -408,8 +449,13 @@ async def ingest_curia_vista(request: IngestCuriaVistaRequest) -> IngestCuriaVis
 
     qdrant_upserted = 0
     if chunk_payloads:
-        embedded = embed_service.embed_batch([text for text, _ in chunk_payloads])
-        qdrant_store.create_collection(dense_dim=len(embedded[0].dense))
+        embedded = await asyncio.to_thread(
+            embed_service.embed_batch, [text for text, _ in chunk_payloads]
+        )
+        try:
+            qdrant_store.create_collection(dense_dim=len(embedded[0].dense))
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         records = [
             ChunkRecord(text=text, metadata=meta, embedding=embedding)
             for (text, meta), embedding in zip(chunk_payloads, embedded)
