@@ -25,8 +25,7 @@ class Settings(BaseSettings):
     llm_provider: str = "anthropic"
     anthropic_api_key: str | None = None
     openai_api_key: str | None = None
-    # Cheapest current Anthropic model — good default while iterating (Phase 3 test UI).
-    # Override via LLM_MODEL in .env.
+    # Cheapest current Anthropic model — a cost-friendly default. Override via LLM_MODEL.
     llm_model: str = "claude-haiku-4-5-20251001"
     # Low, not 0.0: some provider APIs reject/warn on a hard-zero temperature for certain
     # models, and a touch of randomness is harmless for this task. Kept low rather than
@@ -51,8 +50,8 @@ class Settings(BaseSettings):
     # sentence-transformers' own encode() already sorts inputs by length internally before
     # batching, but only within one encode() call; that still allows a batch entirely made
     # of long outlier chunks (chunker.py allows up to ~1500 tokens/article) once
-    # EMBEDDING_BATCH_SIZE is raised for GPU throughput. 24000 mirrors the previously
-    # tested-safe worst case (batch_size=16 x ~1500-token chunk) as a default: below that
+    # EMBEDDING_BATCH_SIZE is raised for GPU throughput. 24000 mirrors the tested-safe
+    # worst case (batch_size=16 x ~1500-token chunk) as a default: below that
     # per-batch token total, chunks are bucketed at the full configured batch size; above
     # it, a bucket of long outliers gets split into several smaller sub-batches
     # automatically. Re-tune against actual VRAM headroom before relying on it.
@@ -62,11 +61,9 @@ class Settings(BaseSettings):
     # CrossEncoder auto-detects CUDA when available, same as the embedding model.
     # max_length caps tokens per (query, chunk) pair — without it, a single outlier
     # chunk (chunker.py allows up to ~1000 words per paragraph split) forces the whole
-    # batch to pad to its length; combined with the embedding model already resident on
-    # the same GPU, this pushed VRAM to ~7.9/8GB and made inference appear to hang
-    # (100% GPU util, no progress) rather than erroring — same outlier-padding failure
-    # mode already documented above for EMBEDDING_BATCH_SIZE, just unaddressed here.
-    # 512 tokens covers the large majority of article chunks; longer ones get truncated
+    # batch to pad to its length, which with the embedding model resident on the same
+    # 8GB GPU made inference appear to hang rather than error (same outlier-padding
+    # failure mode as EMBEDDING_BATCH_SIZE above). 512 tokens covers the large majority of article chunks; longer ones get truncated
     # rather than blowing up latency/memory.
     reranker_max_length: int = 512
     # Kept well below the sentence-transformers default (32) for the same VRAM-headroom
@@ -74,10 +71,10 @@ class Settings(BaseSettings):
     reranker_batch_size: int = 8
 
     # Cap on the *retrieved + cross-reference-expanded chunks* portion of the user prompt
-    # (approximate tokens, see orchestration.prompt_templates.estimate_tokens) — without
-    # it, top_k=8 chunks up to ~1500 tokens each plus MAX_EXPANDED_CHUNKS=5 more had no
-    # ceiling at all (worst case >20k tokens of context for one query, uncontrolled cost/
-    # latency and no guarantee relevant information isn't diluted by marginal chunks).
+    # (approximate tokens, see orchestration.prompt_templates.estimate_tokens). Without
+    # it, top_k=8 chunks of up to ~1500 tokens each plus MAX_EXPANDED_CHUNKS=5 more could
+    # exceed 20k tokens of context per query, with uncontrolled cost/latency and relevant
+    # information diluted by marginal chunks.
     # 6000 is a starting point comfortably above what a typical top_k=8 query needs;
     # re-tune against observed prompt_tokens_approx / cost in the query_completed log.
     max_prompt_context_tokens: int = 6000

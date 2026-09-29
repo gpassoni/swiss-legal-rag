@@ -130,8 +130,7 @@ async def evaluate_case(engine: QueryEngine, case: dict, top_k: int) -> EvalResu
     ranked_keys = _ranked_chunk_keys(result.chunks)
     # `unverified_citation_count == 0` is also true when the answer cites nothing at all
     # (see citation_verifier.VerificationResult.has_citations) — a golden-set case always
-    # has expected_citations, so an answer that cites zero of them should fail the check,
-    # not pass it silently the way it used to.
+    # has expected_citations, so an answer that cites zero of them must fail the check.
     citation_pass = result.unverified_citation_count == 0 and (result.has_citations or not expected)
     return EvalResult(
         id=case["id"],

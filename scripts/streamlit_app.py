@@ -1,4 +1,4 @@
-"""Minimal Streamlit UI to manually test the RAG pipeline (Phase 3): hybrid search +
+"""Minimal Streamlit UI to manually test the RAG pipeline: hybrid search +
 rerank + LLM call + citation verification, with a rough token counter.
 
 Run with:
