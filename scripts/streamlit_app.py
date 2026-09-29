@@ -2,7 +2,7 @@
 rerank + LLM call + citation verification, with a rough token counter.
 
 Run with:
-    uv run streamlit run src/app_streamlit.py
+    uv run streamlit run scripts/streamlit_app.py
 
 Uses ANTHROPIC_API_KEY and LLM_MODEL from .env (see src/config.py) — no separate
 configuration needed.

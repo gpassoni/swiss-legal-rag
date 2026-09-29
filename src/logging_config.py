@@ -21,9 +21,8 @@ def configure_logging(json_output: bool, log_file: Path | str | None = None) -> 
     scripts), which renders to a readable console format instead.
 
     `log_file`, when given, additionally writes every log line to that file (appended,
-    UTF-8) alongside the console — used by `scripts/run_ingestion.py` so a run started
-    by double-clicking a launcher still leaves a persistent, inspectable record (see
-    `start_ingestion.bat`). Without it, logs only ever go to stdout/the console.
+    UTF-8) alongside the console — used by `scripts/run_ingestion.py` so every run
+    leaves a persistent, inspectable record. Without it, logs only go to stdout.
     """
     shared_processors: list[structlog.typing.Processor] = [
         structlog.contextvars.merge_contextvars,

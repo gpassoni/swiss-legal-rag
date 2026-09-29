@@ -214,11 +214,8 @@ async def run_step(name: str, coro) -> str:
     try:
         return await coro
     except Exception:  # noqa: BLE001 - report and keep going, don't crash the whole run
-        # Log the full traceback (not just print it) so it lands in the log file too —
-        # otherwise a failure is only ever visible in the console window that ran this
-        # script, not in logs/ingestion_*.log, which makes after-the-fact diagnosis
-        # (e.g. from a double-clicked start_ingestion.bat window that's already closed)
-        # impossible without re-running.
+        # Log the full traceback (not just print it) so it lands in logs/ingestion_*.log
+        # too, not only in the console that ran this script.
         structlog.get_logger("swiss_legal_ai.scripts.run_ingestion").error(
             "step_failed", step=name, traceback=traceback.format_exc()
         )
