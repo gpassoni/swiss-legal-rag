@@ -80,3 +80,11 @@ JSON with an `answer` and `verified_sources`.
   uv can see.
 - **Embedding stalls on GPU**: lower `EMBEDDING_BATCH_SIZE`. Long outlier chunks make every
   item in a batch pad to their length (see the notes in `.env.example`).
+- **Windows: `/query` fails with `psycopg.InterfaceError ... ProactorEventLoop`**: recent
+  uvicorn versions create their own event loop and ignore the selector policy set in
+  `src/storage/postgres_store.py`. Known issue; until it is fixed, start the API with the
+  policy applied:
+
+  ```bash
+  uv run python -c "import asyncio, uvicorn; from src.api.main import app; asyncio.run(uvicorn.Server(uvicorn.Config(app)).serve())"
+  ```
