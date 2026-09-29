@@ -1,0 +1,4 @@
+# Summary line from scripts/run_ingestion.py, full run of 2026-07-28 (logs/ingestion_20260728_224239.log).
+# Default FEDLEX_SYSTEMATIC_PREFIXES; embedding model BAAI/bge-m3.
+
+2026-07-28T20:44:59.217736Z [info     ] ingestion_summary              results=['Fedlex: 640: no acts found; 642: 3 act(s); 210: 1 act(s); 220: 1 act(s); 311.0: 3 act(s); 312.0: 2 act(s); 272: 3 act(s); 101: 1 act(s); 4973 chunk(s) upserted into Qdrant, 1625 reference(s) extracted', 'SNB: rendoblim (modified=True, 5744 records), snbmonagg (modified=True, 7888 records)', 'Curia Vista: 32 business item(s) upserted into Postgres, 32 chunk(s) upserted into Qdrant, for 2025-01-01..2025-01-31']
