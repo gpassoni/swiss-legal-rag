@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Evaluation harness over `eval/golden_qa.yaml` (architecture doc §9-eval).
+"""Evaluation harness over `eval/golden_qa.yaml` (docs/architecture.md §3.9).
 
 Custom scorer, not Ragas: Ragas's core metrics (faithfulness, context precision, ...)
 are themselves LLM-judged, which reintroduces the same cost/latency/non-determinism in

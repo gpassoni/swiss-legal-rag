@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Bounded, end-to-end manual ingestion for local verification (architecture spec §6.13 / §9).
+"""Bounded, end-to-end manual ingestion for local verification (docs/architecture.md §8).
 
 Runs three small, independent ingestion steps and reports what happened for each:
 1. Fedlex: a handful of consolidated acts under FEDLEX_SYSTEMATIC_PREFIX -> chunked,
