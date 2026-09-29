@@ -16,6 +16,7 @@ Usage:
     uv run python scripts/run_eval.py --ids civile-001  # specific case(s)
     uv run python scripts/run_eval.py --output results.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -93,7 +94,9 @@ def _ranked_chunk_keys(chunks) -> list[tuple[str, str]]:  # type: ignore[no-unty
     return keys
 
 
-def precision_at_k(ranked_keys: list[tuple[str, str]], expected: set[tuple[str, str]]) -> float | None:
+def precision_at_k(
+    ranked_keys: list[tuple[str, str]], expected: set[tuple[str, str]]
+) -> float | None:
     """Fraction of the ranked, budget-trimmed retrieval result that is actually relevant
     — visibility into how much noise reaches the prompt (relevant to the token-budget
     truncation added alongside this: a low precision@k with recall@k already at 100% means
@@ -129,9 +132,7 @@ async def evaluate_case(engine: QueryEngine, case: dict, top_k: int) -> EvalResu
     # (see citation_verifier.VerificationResult.has_citations) — a golden-set case always
     # has expected_citations, so an answer that cites zero of them should fail the check,
     # not pass it silently the way it used to.
-    citation_pass = result.unverified_citation_count == 0 and (
-        result.has_citations or not expected
-    )
+    citation_pass = result.unverified_citation_count == 0 and (result.has_citations or not expected)
     return EvalResult(
         id=case["id"],
         area_of_law=case["area_of_law"],

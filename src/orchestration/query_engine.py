@@ -5,6 +5,7 @@ The LLM layer is provider-agnostic: `QueryEngine` depends on a small `LLMClient`
 protocol, with adapters for Anthropic and OpenAI-compatible APIs. Callers can also pass
 any other object implementing `complete(system, user) -> str`.
 """
+
 from __future__ import annotations
 
 import asyncio

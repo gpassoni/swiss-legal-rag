@@ -1,4 +1,5 @@
 """Minimal FastAPI app: POST /query plus manual ingestion trigger endpoints for testing."""
+
 from __future__ import annotations
 
 import asyncio
@@ -214,9 +215,7 @@ async def ingest_fedlex(request: IngestFedlexRequest) -> IngestFedlexResponse:
     return IngestFedlexResponse(acts_processed=acts_processed, chunks_upserted=upserted)
 
 
-async def _run_fedlex_bulk_job(
-    job_id: int, prefixes: list[str], max_acts_per_prefix: int
-) -> None:
+async def _run_fedlex_bulk_job(job_id: int, prefixes: list[str], max_acts_per_prefix: int) -> None:
     """Background body of `/ingest/fedlex/bulk`: ingest every prefix, updating
     `ingestion_jobs.details` incrementally so `/ingest/fedlex/bulk/{job_id}` can report
     per-prefix progress while the job is still running. Runs after the triggering
@@ -354,9 +353,7 @@ async def ingest_fedlex_bulk(
     pg_store = PostgresStore()
     await pg_store.init_schema()
     job_id = await pg_store.start_job("fedlex_bulk")
-    background_tasks.add_task(
-        _run_fedlex_bulk_job, job_id, prefixes, request.max_acts_per_prefix
-    )
+    background_tasks.add_task(_run_fedlex_bulk_job, job_id, prefixes, request.max_acts_per_prefix)
     return IngestFedlexBulkResponse(job_id=job_id)
 
 
@@ -407,7 +404,9 @@ async def ingest_curia_vista(request: IngestCuriaVistaRequest) -> IngestCuriaVis
     Fedlex (architecture spec §3.1/§3.3), so hybrid search can filter across both."""
     settings = get_settings()
     date_from = date.fromisoformat(request.date_from or settings.curia_vista_date_from)
-    date_to = date.fromisoformat(request.date_to) if request.date_to else date_from + timedelta(days=30)
+    date_to = (
+        date.fromisoformat(request.date_to) if request.date_to else date_from + timedelta(days=30)
+    )
 
     pg_store = PostgresStore()
     await pg_store.init_schema()

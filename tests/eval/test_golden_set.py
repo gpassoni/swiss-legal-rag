@@ -3,6 +3,7 @@
 optional tool, not a unit test. This just guards against a malformed golden-set entry
 breaking `scripts.run_eval` at parse time.
 """
+
 from scripts.run_eval import GOLDEN_SET_PATH, load_golden_set
 
 REQUIRED_FIELDS = {"id", "area_of_law", "language", "question", "expected_citations"}

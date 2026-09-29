@@ -1,6 +1,7 @@
 """Ties the embedding service and the Qdrant store together: embed a text query (dense +
 sparse) and run the hybrid search against the collection.
 """
+
 from __future__ import annotations
 
 from datetime import date

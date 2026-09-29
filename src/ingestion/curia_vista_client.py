@@ -16,12 +16,13 @@ merges by ID, honoring the project-wide IT -> FR -> DE preference (architecture 
 "Misc") — a business item without an Italian localization yet falls back to French, then
 German, rather than being dropped.
 """
+
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
-import logging
+from datetime import UTC, date, datetime
 
 from src.processing.normalizer import clean_text, strip_html
 
@@ -70,7 +71,7 @@ def _parse_odata_date(raw: str | None) -> str | None:
     if not match:
         return raw
     ms = int(match.group(1))
-    return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).date().isoformat()
+    return datetime.fromtimestamp(ms / 1000, tz=UTC).date().isoformat()
 
 
 def _extract_law_references(text: str | None) -> list[str]:
@@ -89,7 +90,7 @@ class CuriaVistaClient:
         self._base_url = base_url
         self._client = PoliteAsyncClient(base_url=base_url, rate_limit_per_sec=rate_limit_per_sec)
 
-    async def __aenter__(self) -> "CuriaVistaClient":
+    async def __aenter__(self) -> CuriaVistaClient:
         return self
 
     async def __aexit__(self, *exc_info) -> None:

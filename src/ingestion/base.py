@@ -1,4 +1,5 @@
 """Shared rate-limiting, retry, and logging helpers for ingestion clients."""
+
 from __future__ import annotations
 
 import asyncio
@@ -17,9 +18,7 @@ from tenacity import (
 logger = logging.getLogger("swiss_legal_ai.ingestion")
 if not logger.handlers:
     handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
-    )
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
@@ -80,7 +79,9 @@ class PoliteAsyncClient:
         timeout: float = 30.0,
         headers: dict[str, str] | None = None,
     ) -> None:
-        default_headers = {"User-Agent": "swiss-legal-ai-phase1/0.1 (research/non-commercial testing)"}
+        default_headers = {
+            "User-Agent": "swiss-legal-ai-phase1/0.1 (research/non-commercial testing)"
+        }
         if headers:
             default_headers.update(headers)
         self._client = httpx.AsyncClient(
@@ -88,7 +89,7 @@ class PoliteAsyncClient:
         )
         self._limiter = RateLimiter(rate=rate_limit_per_sec, period=1.0)
 
-    async def __aenter__(self) -> "PoliteAsyncClient":
+    async def __aenter__(self) -> PoliteAsyncClient:
         return self
 
     async def __aexit__(self, *exc_info: Any) -> None:

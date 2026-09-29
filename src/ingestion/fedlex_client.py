@@ -22,6 +22,7 @@ this writing. Because the ontology and endpoint are maintained externally, re-va
 these queries against ``https://fedlex.data.admin.ch/sparqlendpoint`` (there is a browser
 query form at that URL) before relying on them for anything beyond Phase 1 testing.
 """
+
 from __future__ import annotations
 
 import logging
@@ -265,7 +266,9 @@ class FedlexClient:
                 by_uri.setdefault(act.act_uri, act)
         return list(by_uri.values())
 
-    def fetch_act(self, act_uri: str, language: str = "de", include_text: bool = False) -> ActDocument:
+    def fetch_act(
+        self, act_uri: str, language: str = "de", include_text: bool = False
+    ) -> ActDocument:
         """Fetch title + validity metadata for one act (SPARQL), optionally followed by an
         HTML fetch of the consolidated text (`include_text=True`) for downstream chunking.
         """

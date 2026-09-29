@@ -7,6 +7,7 @@ Run with:
 Uses ANTHROPIC_API_KEY and LLM_MODEL from .env (see src/config.py) — no separate
 configuration needed.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -45,9 +46,7 @@ def run_async(coro):
 settings = get_settings()
 
 st.title("⚖️ Swiss Legal AI — test RAG pipeline")
-st.caption(
-    "Fase 3 — interfaccia minima per test locale. Non è consulenza legale o fiscale."
-)
+st.caption("Fase 3 — interfaccia minima per test locale. Non è consulenza legale o fiscale.")
 
 with st.sidebar:
     st.subheader("Configurazione attiva")
@@ -57,15 +56,16 @@ with st.sidebar:
     st.caption("Modificabili in .env (LLM_MODEL, EMBEDDING_MODEL) senza toccare il codice.")
 
 question = st.text_area(
-    "Domanda sul diritto federale svizzero, sull'attività parlamentare o sulle "
-    "statistiche SNB:",
+    "Domanda sul diritto federale svizzero, sull'attività parlamentare o sulle statistiche SNB:",
     height=100,
     placeholder="Es: Cosa disciplina l'ordinanza sull'imposizione degli utili di liquidazione?",
 )
 
 col1, col2 = st.columns(2)
 with col1:
-    source_filter = st.selectbox("Filtra per fonte (opzionale)", ["(tutte)", "fedlex", "curia_vista"])
+    source_filter = st.selectbox(
+        "Filtra per fonte (opzionale)", ["(tutte)", "fedlex", "curia_vista"]
+    )
 with col2:
     top_k = st.slider("Chunk usati per la risposta", min_value=3, max_value=15, value=8)
 

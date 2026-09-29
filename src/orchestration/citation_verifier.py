@@ -5,6 +5,7 @@ confirms each one matches a chunk actually present in the retrieved context. Thi
 hard filter, not a suggestion: citations that don't match a retrieved chunk are flagged
 as unverified and must not be presented to the user as sources.
 """
+
 from __future__ import annotations
 
 import re

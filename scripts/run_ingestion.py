@@ -13,6 +13,7 @@ Each step is independently try/excepted so a failure in one (e.g. no network acc
 given source) doesn't prevent verifying the others. This script does not raise on partial
 failure; check the printed summary.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -62,9 +63,7 @@ async def ingest_fedlex() -> str:
         # Language preference: Italian first, then French, then German (an act missing
         # an IT title/text falls back down the list — see
         # FedlexClient.DEFAULT_LANGUAGE_PRIORITY).
-        acts = await asyncio.to_thread(
-            client.list_consolidated_acts_by_prefix_preferred, prefix
-        )
+        acts = await asyncio.to_thread(client.list_consolidated_acts_by_prefix_preferred, prefix)
         if not acts:
             per_prefix_summary.append(f"{prefix}: no acts found")
             continue
@@ -123,7 +122,8 @@ async def ingest_fedlex() -> str:
     ]
     upserted = store.upsert_chunks(records)
     return (
-        "Fedlex: " + "; ".join(per_prefix_summary)
+        "Fedlex: "
+        + "; ".join(per_prefix_summary)
         + f"; {upserted} chunk(s) upserted into Qdrant, {len(all_refs)} reference(s) extracted"
     )
 

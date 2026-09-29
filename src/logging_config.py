@@ -6,6 +6,7 @@ module called plain `logging.getLogger(...)`); this wires it up so
 query (retrieval/rerank/LLM latency, token usage, cost estimate, citation-verification
 outcome) instead of scattered plain-text log calls.
 """
+
 from __future__ import annotations
 
 import logging

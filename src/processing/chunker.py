@@ -3,6 +3,7 @@
 Chunks are cut by legal/logical unit (article, or paragraph within an over-long article),
 never by fixed character count — see architecture spec §3.1.
 """
+
 from __future__ import annotations
 
 import re
@@ -45,9 +46,7 @@ def _split_long_article(article: str, text: str, max_tokens: int) -> list[Chunk]
     for paragraph in paragraphs:
         paragraph_tokens = _approx_token_count(paragraph)
         if buffer and buffer_tokens + paragraph_tokens > max_tokens:
-            chunks.append(
-                Chunk(article=article, text="\n\n".join(buffer), paragraph_index=part)
-            )
+            chunks.append(Chunk(article=article, text="\n\n".join(buffer), paragraph_index=part))
             part += 1
             buffer = []
             buffer_tokens = 0

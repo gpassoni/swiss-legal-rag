@@ -1,6 +1,7 @@
 """Batch embedding service: dense vectors via jina-embeddings-v3, plus a lightweight
 hashed-BM25-style sparse representation for Qdrant's native hybrid (dense+sparse) search.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -189,9 +190,7 @@ class EmbedService:
     ) -> list[EmbeddedChunk]:
         dense_vectors = self.embed_dense(texts, task=task)
         sparse_vectors = self.embed_sparse(texts)
-        return [
-            EmbeddedChunk(dense=d, sparse=s) for d, s in zip(dense_vectors, sparse_vectors)
-        ]
+        return [EmbeddedChunk(dense=d, sparse=s) for d, s in zip(dense_vectors, sparse_vectors)]
 
 
 @lru_cache

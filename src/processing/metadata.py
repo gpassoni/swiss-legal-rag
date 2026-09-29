@@ -1,8 +1,9 @@
 """Builds the metadata schema (architecture spec §3.2) attached to every chunk before embedding."""
+
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -50,7 +51,7 @@ def build_metadata(
     ingested_at: datetime | None = None,
 ) -> ChunkMetadata:
     """Build the metadata payload for one chunk, computing its content hash and timestamp."""
-    ts = ingested_at or datetime.now(timezone.utc)
+    ts = ingested_at or datetime.now(UTC)
     return ChunkMetadata(
         source=source,
         law_short_name=law_short_name,

@@ -4,6 +4,7 @@ Per architecture spec §3.6 and §8, the disclaimer is a product requirement enf
 in code — ``ensure_disclaimer`` guarantees it is present on every answer, rather than
 relying on the model to remember to include it.
 """
+
 from __future__ import annotations
 
 import math
