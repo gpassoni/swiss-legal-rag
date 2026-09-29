@@ -4,7 +4,10 @@ from src.storage.qdrant_store import SearchResult
 
 def _chunk(article, source_url):
     return SearchResult(
-        id="1", score=1.0, text="irrelevant", metadata={"article": article, "source_url": source_url}
+        id="1",
+        score=1.0,
+        text="irrelevant",
+        metadata={"article": article, "source_url": source_url},
     )
 
 

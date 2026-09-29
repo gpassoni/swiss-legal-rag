@@ -1,6 +1,7 @@
 """Qdrant vector store: collection setup, chunk upsert, hybrid (dense+sparse) search
 with metadata filtering — see architecture spec §3.3/§3.5.
 """
+
 from __future__ import annotations
 
 import logging
@@ -177,9 +178,7 @@ class QdrantStore:
                     models.FieldCondition(
                         key="systematic_number", match=models.MatchValue(value=systematic_number)
                     ),
-                    models.FieldCondition(
-                        key="article", match=models.MatchValue(value=article)
-                    ),
+                    models.FieldCondition(key="article", match=models.MatchValue(value=article)),
                 ]
             ),
             limit=1,

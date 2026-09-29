@@ -5,6 +5,7 @@ The LLM layer is provider-agnostic: `QueryEngine` depends on a small `LLMClient`
 protocol, with adapters for Anthropic and OpenAI-compatible APIs. Callers can also pass
 any other object implementing `complete(system, user) -> str`.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -42,9 +43,7 @@ class LLMClient(Protocol):
 # Retry only on genuinely transient provider errors (rate limit, connection issues,
 # request timeout, 5xx/overload) — never on 4xx client errors (bad request, auth), which
 # a retry can't fix and would just add latency to a request that's going to fail anyway.
-# Every single query depends on this one call succeeding, unlike ingestion's HTTP calls
-# which already had this pattern (see ingestion/base.py::default_retry) — the LLM
-# adapters previously had no retry/timeout at all.
+# Mirrors the ingestion HTTP retry policy (ingestion/base.py::default_retry).
 def _anthropic_retry():
     return retry(
         retry=retry_if_exception_type(
@@ -272,9 +271,8 @@ class QueryEngine:
         # Both hybrid_search.search (a sync QdrantClient call) and reranker.rerank (a
         # real CPU/GPU cross-encoder inference batch, not I/O) are blocking calls — run
         # them off the event loop so one request's retrieval/rerank doesn't stall every
-        # other concurrent request under FastAPI's single event loop. Ingestion already
-        # does this (see api/main.py::_fetch_and_chunk); this was the one hot path where
-        # it was missing.
+        # other concurrent request under FastAPI's single event loop (same approach as
+        # api/main.py::_fetch_and_chunk).
         t0 = time.perf_counter()
         candidates = await asyncio.to_thread(
             hybrid_search.search,
@@ -334,8 +332,8 @@ class QueryEngine:
             )
         if not verification.has_citations and prompt_chunks:
             # Chunks were retrieved and shown to the model, yet the answer cites none of
-            # them — `unverified_citation_count` alone is 0 here too, which previously let
-            # this case pass silently as "no unverified citations" (see citation_verifier
+            # them — `unverified_citation_count` alone is 0 here too, so it would otherwise
+            # pass silently as "no unverified citations" (see citation_verifier
             # docstring). Distinct from the legitimate "insufficient information" case,
             # this is still worth a warning since it's the one signal that lets an
             # ungrounded answer be told apart from a well-cited one downstream.

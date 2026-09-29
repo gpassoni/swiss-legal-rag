@@ -210,7 +210,6 @@ swiss-legal-ai/
 ├── src/
 │   ├── config.py                     # Settings, PREFIX_LABELS/label_for_systematic_number, LLM cost table
 │   ├── logging_config.py             # structlog setup (§3.8), called once per entry point
-│   ├── app_streamlit.py              # Phase 3 manual test UI
 │   ├── ingestion/
 │   │   ├── fedlex_client.py        # SPARQL queries against fedlex.data.admin.ch
 │   │   ├── curia_vista_client.py    # OData client for ws.parlament.ch
@@ -239,41 +238,23 @@ swiss-legal-ai/
 ├── scripts/
 │   ├── run_ingestion.py              # one-shot manual ingestion trigger (all configured prefixes)
 │   ├── init_qdrant_collection.py
+│   ├── inspect_qdrant.py             # metadata/keyword browser for the Qdrant collection
+│   ├── streamlit_app.py              # manual test UI for the full RAG pipeline
 │   └── run_eval.py                   # golden-set scorer (§3.9)
 ├── eval/
 │   └── golden_qa.yaml                # golden Q&A set (§3.9)
+├── docs/
+│   ├── architecture.md               # this document
+│   └── setup.md                      # setup and verification checklist
 └── tests/
-    ├── test_fedlex_client.py
-    ├── test_chunker.py
-    ├── test_hybrid_search.py
-    ├── test_citation_verifier.py
-    ├── test_config.py
-    ├── test_metadata.py
-    ├── test_reference_extractor.py
+    ├── test_*.py                     # unit tests per module, all HTTP/DB calls mocked
     └── eval/
         └── test_golden_set.py         # schema-only check, no network (§3.9)
 ```
 
 ---
 
-## 6. Implementation Tasks (ordered — hand this list to Codex as the build plan)
-
-1. **Scaffold the repo** with the structure above, `pyproject.toml`, and a `docker-compose.yml` bringing up Qdrant and PostgreSQL with health checks.
-2. **Build `fedlex_client.py`**: a SPARQL client that can (a) list consolidated acts under a given systematic number prefix (e.g. `640` for tax law), (b) fetch the full text + metadata (title, articles, dates, language) for a given act. Include a small, hardcoded test query set for validation.
-3. **Build `curia_vista_client.py`**: fetch `Business` entities filtered by a date range via the OData endpoint; parse into a normalized dict (title, summary, status, date, related law references if present).
-4. **Build `snb_client.py`**: fetch one or two example cubes (e.g. exchange rates, SARON) as CSV, parse into structured records, and store in PostgreSQL. Implement the "only fetch if updated" pattern using ETags as documented by SNB.
-5. **Build `chunker.py` + `metadata.py`**: given raw Fedlex act text, split into per-article chunks and attach the metadata schema from §3.2.
-6. **Build `embed_service.py`**: load `jina-embeddings-v3`, batch-embed a list of chunks, return dense vectors (and a sparse representation if using Qdrant's built-in sparse support).
-7. **Build `qdrant_store.py`**: create the collection with the right vector config (dense + sparse), implement `upsert_chunks()` and `hybrid_search(query, filters)`.
-8. **Build `reranker.py`**: load the local cross-encoder reranker, rerank a candidate list against a query.
-9. **Build `query_engine.py`**: tie it together — take a user question, run hybrid search + rerank, build the LLM prompt with retrieved chunks, call the LLM, run `citation_verifier.py` on the output, return the final answer with verified sources.
-10. **Build `api/main.py`**: a minimal FastAPI app with a single `POST /query` endpoint wrapping `query_engine.py`, plus a `POST /ingest/fedlex` and `POST /ingest/snb` endpoint to manually trigger ingestion for testing.
-11. **Write tests** for each client (mocking HTTP calls), the chunker, and the citation verifier.
-12. **Write `scripts/run_ingestion.py`**: a manual script to run a small, bounded ingestion (e.g. one systematic number prefix from Fedlex, one SNB cube, one month of Curia Vista business) end-to-end, for local verification before scaling up.
-
----
-
-## 7. Configuration (.env.example)
+## 6. Configuration (.env.example)
 
 ```
 # Vector DB
@@ -293,9 +274,7 @@ ANTHROPIC_API_KEY=
 # or
 OPENAI_API_KEY=
 
-# Embedding model (jina-embeddings-v3 was tried first per the original spec above, but
-# its pinned trust_remote_code revision is incompatible with the installed transformers
-# version — see .env.example for the current pin)
+# Embedding model (see §3.4 for why not jina-embeddings-v3)
 EMBEDDING_MODEL=BAAI/bge-m3
 EMBEDDING_DEVICE=cpu   # or cuda
 
@@ -308,7 +287,7 @@ CURIA_VISTA_DATE_FROM=2025-01-01
 
 ---
 
-## 8. Legal & Compliance Notes (recap for this phase)
+## 7. Legal & Compliance Notes (recap for this phase)
 
 - Fedlex text/metadata reuse, including commercial, is authorized per the conditions published at `fedlex.admin.ch/de/broadcasters` — re-verify before scaling ingestion volume.
 - Curia Vista and the SNB data portal are both public, no-auth APIs intended for reuse — still respect each one's stated rate-limiting etiquette (especially SNB's ETag/`lastUpdate` guidance).
@@ -317,7 +296,7 @@ CURIA_VISTA_DATE_FROM=2025-01-01
 
 ---
 
-## 9. Definition of Done for Phase 1
+## 8. Definition of Done for Phase 1
 
 - `docker-compose up` brings up Qdrant + Postgres cleanly.
 - `scripts/run_ingestion.py` successfully ingests: a bounded set of Fedlex articles (one systematic number prefix), one to two SNB cubes, and one month of Curia Vista business items.

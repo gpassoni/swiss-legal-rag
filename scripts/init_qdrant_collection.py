@@ -6,6 +6,7 @@ somewhere to write to.
 Usage:
     python scripts/init_qdrant_collection.py [--dim 1024] [--recreate]
 """
+
 from __future__ import annotations
 
 import argparse

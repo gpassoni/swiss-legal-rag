@@ -1,6 +1,7 @@
 """Batch embedding service: dense vectors via jina-embeddings-v3, plus a lightweight
 hashed-BM25-style sparse representation for Qdrant's native hybrid (dense+sparse) search.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -65,7 +66,7 @@ def _length_bucketed_batches(
     `encode()` already sorts its input by length internally before forming batches, but
     only within a single call — with a large enough `batch_size` (e.g. once raised for
     GPU throughput), that still allows one sub-batch to end up entirely made of long
-    outlier chunks, which is what previously forced `EMBEDDING_BATCH_SIZE` to stay low
+    outlier chunks, which would otherwise force `EMBEDDING_BATCH_SIZE` to stay low
     across the board. Sorting here first and applying the token budget lets short/medium
     chunks batch at the full configured size while long outliers automatically split into
     smaller sub-batches instead of a fixed small batch size everywhere.
@@ -189,9 +190,7 @@ class EmbedService:
     ) -> list[EmbeddedChunk]:
         dense_vectors = self.embed_dense(texts, task=task)
         sparse_vectors = self.embed_sparse(texts)
-        return [
-            EmbeddedChunk(dense=d, sparse=s) for d, s in zip(dense_vectors, sparse_vectors)
-        ]
+        return [EmbeddedChunk(dense=d, sparse=s) for d, s in zip(dense_vectors, sparse_vectors)]
 
 
 @lru_cache

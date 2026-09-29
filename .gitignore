@@ -19,3 +19,11 @@ postgres_data/
 .idea/
 .vscode/
 .ipynb_checkpoints/
+
+# Local runtime output
+logs/
+eval/results/*.log
+
+# Local tool state
+.claude/
+.nexus/

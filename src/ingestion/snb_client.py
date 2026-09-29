@@ -8,6 +8,7 @@ cube on every run.
 
 Docs: https://data.snb.ch/en/help_api
 """
+
 from __future__ import annotations
 
 import csv
@@ -35,7 +36,7 @@ class SNBClient:
     def __init__(self, base_url: str = SNB_BASE_URL, rate_limit_per_sec: int = 2) -> None:
         self._client = PoliteAsyncClient(base_url=base_url, rate_limit_per_sec=rate_limit_per_sec)
 
-    async def __aenter__(self) -> "SNBClient":
+    async def __aenter__(self) -> SNBClient:
         return self
 
     async def __aexit__(self, *exc_info) -> None:

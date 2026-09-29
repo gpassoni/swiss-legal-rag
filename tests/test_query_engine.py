@@ -41,9 +41,7 @@ def _make_engine(llm_answer: str, chunks: list[SearchResult]):
 @pytest.mark.asyncio
 async def test_answer_has_citations_true_when_answer_cites_retrieved_chunk():
     chunks = [_chunk()]
-    engine = _make_engine(
-        "Deductions apply (Art. 21, https://fedlex.example/act/1).", chunks
-    )
+    engine = _make_engine("Deductions apply (Art. 21, https://fedlex.example/act/1).", chunks)
 
     result = await engine.answer("question?")
 
@@ -69,9 +67,7 @@ async def test_answer_has_citations_false_when_answer_cites_nothing():
 @pytest.mark.asyncio
 async def test_answer_has_citations_true_even_when_citation_is_hallucinated():
     chunks = [_chunk()]
-    engine = _make_engine(
-        "Deductions apply (Art. 99, https://fedlex.example/act/999).", chunks
-    )
+    engine = _make_engine("Deductions apply (Art. 99, https://fedlex.example/act/999).", chunks)
 
     result = await engine.answer("question?")
 
@@ -100,9 +96,7 @@ async def test_answer_excludes_dropped_chunk_from_citation_verification():
     # verify as legitimate — that chunk was never actually shown to the model.
     kept = _chunk(article="1", words=5)
     dropped = _chunk(article="99", words=5000)
-    engine = _make_engine(
-        "See (Art. 99, https://fedlex.example/act/1).", [kept, dropped]
-    )
+    engine = _make_engine("See (Art. 99, https://fedlex.example/act/1).", [kept, dropped])
 
     with patch("src.orchestration.query_engine.get_settings") as mock_settings:
         mock_settings.return_value.max_prompt_context_tokens = 50

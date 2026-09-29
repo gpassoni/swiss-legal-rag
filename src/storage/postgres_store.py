@@ -4,15 +4,17 @@ Per architecture spec §3.3, numeric time series and structured records are quer
 exactly via SQL — never embedded/semantically searched — so this module, not the vector
 store, is the source of truth for that data.
 """
+
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
 import sys
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, AsyncIterator
+from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
@@ -132,9 +134,7 @@ class PostgresStore:
     async def get_cube_etag(self, cube_id: str) -> str | None:
         async with await self._connect() as conn:
             row = await (
-                await conn.execute(
-                    "SELECT etag FROM snb_cube_state WHERE cube_id = %s", (cube_id,)
-                )
+                await conn.execute("SELECT etag FROM snb_cube_state WHERE cube_id = %s", (cube_id,))
             ).fetchone()
             return row["etag"] if row else None
 
@@ -235,7 +235,9 @@ class PostgresStore:
             await conn.commit()
             return row["id"]
 
-    async def finish_job(self, job_id: int, status: str, details: dict[str, Any] | None = None) -> None:
+    async def finish_job(
+        self, job_id: int, status: str, details: dict[str, Any] | None = None
+    ) -> None:
         async with await self._connect() as conn:
             await conn.execute(
                 """

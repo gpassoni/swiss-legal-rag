@@ -79,9 +79,7 @@ async def test_bulk_job_embeds_and_upserts_per_act_not_once_at_the_end():
         patch.object(main_module, "_store", return_value=fake_store),
         patch.object(main_module, "PostgresStore", return_value=fake_pg_store),
     ):
-        await main_module._run_fedlex_bulk_job(
-            job_id=1, prefixes=["642.11"], max_acts_per_prefix=5
-        )
+        await main_module._run_fedlex_bulk_job(job_id=1, prefixes=["642.11"], max_acts_per_prefix=5)
 
     assert fake_embed_service.embed_batch.call_count == 2
     assert fake_store.upsert_chunks.call_count == 2
@@ -122,9 +120,7 @@ async def test_bulk_job_checkpoints_progress_incrementally():
         patch.object(main_module, "_store", return_value=fake_store),
         patch.object(main_module, "PostgresStore", return_value=fake_pg_store),
     ):
-        await main_module._run_fedlex_bulk_job(
-            job_id=1, prefixes=["642.11"], max_acts_per_prefix=5
-        )
+        await main_module._run_fedlex_bulk_job(job_id=1, prefixes=["642.11"], max_acts_per_prefix=5)
 
     # At least one intermediate update_job_details call reported acts=1 (checkpoint after
     # the first act, before the second act had even been fetched) — proof progress is
@@ -163,9 +159,7 @@ async def test_bulk_job_retains_progress_from_acts_completed_before_a_later_fail
         patch.object(main_module, "_store", return_value=fake_store),
         patch.object(main_module, "PostgresStore", return_value=fake_pg_store),
     ):
-        await main_module._run_fedlex_bulk_job(
-            job_id=1, prefixes=["642.11"], max_acts_per_prefix=5
-        )
+        await main_module._run_fedlex_bulk_job(job_id=1, prefixes=["642.11"], max_acts_per_prefix=5)
 
     # Act 1's chunks were embedded/upserted before act 2 failed — that work isn't undone.
     assert fake_embed_service.embed_batch.call_count == 1

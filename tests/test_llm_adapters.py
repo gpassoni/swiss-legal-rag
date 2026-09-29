@@ -130,9 +130,7 @@ async def test_openai_adapter_passes_temperature_and_timeout_to_client():
     mock_client.chat.completions.create = AsyncMock(return_value=success)
 
     with patch("openai.AsyncOpenAI", return_value=mock_client) as mock_ctor:
-        adapter = OpenAIAdapter(
-            api_key="test-key", model="gpt-x", temperature=0.3, timeout=20.0
-        )
+        adapter = OpenAIAdapter(api_key="test-key", model="gpt-x", temperature=0.3, timeout=20.0)
         await adapter.complete("system", "user")
 
     mock_ctor.assert_called_once_with(api_key="test-key", timeout=20.0)

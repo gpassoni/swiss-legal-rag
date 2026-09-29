@@ -69,12 +69,13 @@ def test_fetch_act_raises_lookup_error_when_no_results(client):
 
 
 def test_fetch_act_with_include_text_calls_html_fetch(client):
-    fake_bindings = [
-        {"title": _binding("Some Act"), "srNotation": _binding("640.1")}
-    ]
-    with patch.object(FedlexClient, "_run_query", return_value=fake_bindings), patch.object(
-        FedlexClient, "fetch_act_html_text", return_value="Art. 1 Some text"
-    ) as fetch_html:
+    fake_bindings = [{"title": _binding("Some Act"), "srNotation": _binding("640.1")}]
+    with (
+        patch.object(FedlexClient, "_run_query", return_value=fake_bindings),
+        patch.object(
+            FedlexClient, "fetch_act_html_text", return_value="Art. 1 Some text"
+        ) as fetch_html,
+    ):
         doc = client.fetch_act("https://fedlex.example/eli/cc/3", include_text=True)
 
     fetch_html.assert_called_once_with("https://fedlex.example/eli/cc/3", language="de")
@@ -112,9 +113,10 @@ def test_fetch_act_html_text_fetches_resolved_file_url_not_act_uri(client):
         "<p>Some article text.</p></article></body></html>",
         request=httpx.Request("GET", file_url),
     )
-    with patch.object(
-        FedlexClient, "fetch_act_file_url", return_value=file_url
-    ) as fetch_url, patch("src.ingestion.fedlex_client.httpx.get", return_value=fake_response) as get:
+    with (
+        patch.object(FedlexClient, "fetch_act_file_url", return_value=file_url) as fetch_url,
+        patch("src.ingestion.fedlex_client.httpx.get", return_value=fake_response) as get,
+    ):
         text = client.fetch_act_html_text(act_uri, language="de")
 
     fetch_url.assert_called_once_with(act_uri, language="de")

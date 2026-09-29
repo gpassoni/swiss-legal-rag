@@ -1,7 +1,7 @@
-# Golden evaluation set (architecture doc §9-eval, scripts/run_eval.py).
+# Golden evaluation set (docs/architecture.md §3.9, scripts/run_eval.py).
 #
 # Small and high-signal by design, not exhaustive — see the risk note in
-# swiss-legal-ai-architecture.md: keep this small as legal-area coverage grows, don't let
+# docs/architecture.md: keep this small as legal-area coverage grows, don't let
 # it become a second corpus to maintain. `expected_citations` are the (systematic_number,
 # article) pairs a correct, well-grounded answer should cite; `run_eval.py` checks both
 # retrieval recall@k against them and the deterministic citation-verifier pass rate.

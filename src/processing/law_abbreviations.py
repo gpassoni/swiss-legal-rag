@@ -10,6 +10,7 @@ scope. Ambiguous abbreviations shared across languages for the same law (e.g. "C
 both "Code civil" and "Codice civile") are not actually ambiguous here since they resolve
 to the same systematic number.
 """
+
 from __future__ import annotations
 
 # abbreviation -> SR/RS systematic number. Longer/more specific keys are checked first

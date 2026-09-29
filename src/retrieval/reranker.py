@@ -1,4 +1,5 @@
 """Local cross-encoder reranker: closes the top-50 -> top-5/8 gap (architecture spec §3.5)."""
+
 from __future__ import annotations
 
 import logging
@@ -52,12 +53,8 @@ class Reranker:
         if not candidates:
             return []
         pairs = [(query, candidate.text) for candidate in candidates]
-        scores = self.model.predict(
-            pairs, batch_size=self._batch_size, show_progress_bar=False
-        )
-        reranked = sorted(
-            zip(candidates, scores), key=lambda pair: pair[1], reverse=True
-        )[:top_k]
+        scores = self.model.predict(pairs, batch_size=self._batch_size, show_progress_bar=False)
+        reranked = sorted(zip(candidates, scores), key=lambda pair: pair[1], reverse=True)[:top_k]
         results = []
         for candidate, score in reranked:
             results.append(

@@ -20,6 +20,7 @@ Examples:
   uv run python scripts/inspect_qdrant.py search --systematic-number 642.114
   uv run python scripts/inspect_qdrant.py export --n 20 --source fedlex --out sample.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -112,8 +113,10 @@ def cmd_search(client: QdrantClient, args: argparse.Namespace) -> None:
         text = payload.pop("text", "")
         print("=" * 80)
         print(f"id: {p.id}")
-        print(f"source={payload.get('source')}  language={payload.get('language')}  "
-              f"article={payload.get('article')}  systematic_number={payload.get('systematic_number')}")
+        print(
+            f"source={payload.get('source')}  language={payload.get('language')}  "
+            f"article={payload.get('article')}  systematic_number={payload.get('systematic_number')}"
+        )
         print(f"law_short_name: {payload.get('law_short_name')}")
         print(f"valid_from={payload.get('valid_from')}  valid_to={payload.get('valid_to')}")
         print(f"source_url: {payload.get('source_url')}")
@@ -134,7 +137,9 @@ def cmd_export(client: QdrantClient, args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--collection", default=DEFAULT_COLLECTION, help="Qdrant collection name")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -154,7 +159,9 @@ def main() -> None:
     export_parser.add_argument("--language", help="e.g. it, fr, de, rm")
     export_parser.add_argument("--law-short-name", dest="law_short_name", help="exact match")
     export_parser.add_argument("--keyword", help="case-insensitive substring match on chunk text")
-    export_parser.add_argument("--n", type=int, default=20, help="number of points to export (default 20)")
+    export_parser.add_argument(
+        "--n", type=int, default=20, help="number of points to export (default 20)"
+    )
     export_parser.add_argument("--out", default="qdrant_sample.json", help="output JSON file path")
 
     args = parser.parse_args()

@@ -15,6 +15,7 @@ re-resolved later (a new code added to `LAW_ABBREVIATIONS`) without re-parsing t
 text. Coverage across DE/FR/IT stylistic variation is intentionally incomplete; this is
 not a document-structure parser.
 """
+
 from __future__ import annotations
 
 import re
@@ -39,7 +40,9 @@ _LOOKAHEAD_WINDOW = 30
 
 # Longest-first so "CPC"/"CPP"/"StGB"/"StPO" aren't shadowed by a shorter key ("CP").
 _KNOWN_ABBREV_PATTERN = re.compile(
-    r"\b(?:" + "|".join(re.escape(k) for k in sorted(LAW_ABBREVIATIONS, key=len, reverse=True)) + r")\b"
+    r"\b(?:"
+    + "|".join(re.escape(k) for k in sorted(LAW_ABBREVIATIONS, key=len, reverse=True))
+    + r")\b"
 )
 # Generic "looks like an abbreviation" shape for laws not (yet) in LAW_ABBREVIATIONS:
 # a short run of uppercase letters (CO, ZGB, ...), optionally with a trailing period.

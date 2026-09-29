@@ -1,4 +1,5 @@
 """Text cleanup and language detection shared by the chunking pipeline."""
+
 from __future__ import annotations
 
 import re

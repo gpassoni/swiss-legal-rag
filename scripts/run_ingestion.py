@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Bounded, end-to-end manual ingestion for local verification (architecture spec §6.13 / §9).
+"""Bounded, end-to-end manual ingestion for local verification (docs/architecture.md §8).
 
 Runs three small, independent ingestion steps and reports what happened for each:
 1. Fedlex: a handful of consolidated acts under FEDLEX_SYSTEMATIC_PREFIX -> chunked,
@@ -13,6 +13,7 @@ Each step is independently try/excepted so a failure in one (e.g. no network acc
 given source) doesn't prevent verifying the others. This script does not raise on partial
 failure; check the printed summary.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -62,9 +63,7 @@ async def ingest_fedlex() -> str:
         # Language preference: Italian first, then French, then German (an act missing
         # an IT title/text falls back down the list — see
         # FedlexClient.DEFAULT_LANGUAGE_PRIORITY).
-        acts = await asyncio.to_thread(
-            client.list_consolidated_acts_by_prefix_preferred, prefix
-        )
+        acts = await asyncio.to_thread(client.list_consolidated_acts_by_prefix_preferred, prefix)
         if not acts:
             per_prefix_summary.append(f"{prefix}: no acts found")
             continue
@@ -123,7 +122,8 @@ async def ingest_fedlex() -> str:
     ]
     upserted = store.upsert_chunks(records)
     return (
-        "Fedlex: " + "; ".join(per_prefix_summary)
+        "Fedlex: "
+        + "; ".join(per_prefix_summary)
         + f"; {upserted} chunk(s) upserted into Qdrant, {len(all_refs)} reference(s) extracted"
     )
 
@@ -214,11 +214,8 @@ async def run_step(name: str, coro) -> str:
     try:
         return await coro
     except Exception:  # noqa: BLE001 - report and keep going, don't crash the whole run
-        # Log the full traceback (not just print it) so it lands in the log file too —
-        # otherwise a failure is only ever visible in the console window that ran this
-        # script, not in logs/ingestion_*.log, which makes after-the-fact diagnosis
-        # (e.g. from a double-clicked start_ingestion.bat window that's already closed)
-        # impossible without re-running.
+        # Log the full traceback (not just print it) so it lands in logs/ingestion_*.log
+        # too, not only in the console that ran this script.
         structlog.get_logger("swiss_legal_ai.scripts.run_ingestion").error(
             "step_failed", step=name, traceback=traceback.format_exc()
         )
